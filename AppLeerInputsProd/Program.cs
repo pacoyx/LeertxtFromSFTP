@@ -12,6 +12,7 @@ namespace AppLeerInputs
     {
         static void Main(string[] args)
         {
+            //importamos los txt de geopagos
             Input_Geopagos();
         }
 

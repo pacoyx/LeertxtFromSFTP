@@ -59,16 +59,18 @@ namespace AppLeerInputs.Transmision
 
                 var progress = new ProgressBar();
 
-                foreach (var file in files)
-                {                    
-                    string nomfile = Path.GetFileName(file.FullName);
+                //foreach (var file in files)
+                Parallel.ForEach(files, (currentFile) =>
+                {
+                    string nomfile = Path.GetFileName(currentFile.FullName);
 
                     if (nomfile != "." && nomfile != "..")
                     {
-                        if (nomfile.Contains(filtroTrx)) {                            
-                            using (var fileD = File.OpenWrite(carpetaLocal + carpeta+ @"\" + filtroTrx + ".txt"))
+                        if (nomfile.Contains(filtroTrx))
+                        {
+                            using (var fileD = File.OpenWrite(carpetaLocal + carpeta + @"\" + filtroTrx + ".txt"))
                             {
-                                sftp.DownloadFile(file.FullName, fileD);
+                                sftp.DownloadFile(currentFile.FullName, fileD);
                             }
                         }
 
@@ -76,16 +78,18 @@ namespace AppLeerInputs.Transmision
                         {
                             using (var fileD = File.OpenWrite(carpetaLocal + carpeta + @"\" + nomfile))
                             {
-                                sftp.DownloadFile(file.FullName, fileD);
+                                sftp.DownloadFile(currentFile.FullName, fileD);
                             }
                         }
                     }
 
-
                     cont++;
                     progress.Report((double)cont / files.Count<object>());
-                    //Thread.Sleep(20);
-                }
+                    Thread.Sleep(20);
+                    
+                });
+
+             
                 progress = null;
 
                 Console.WriteLine("fecha/hora termino: {0}",DateTime.UtcNow);
@@ -97,41 +101,7 @@ namespace AppLeerInputs.Transmision
             }
 
 
-        }
-
-        private static void progreso(int progreso, int total = 100) //Default 100
-        {
-           
-            //Dibujar la barra vacia
-            Console.CursorLeft = 0;
-            Console.Write("["); //inicio
-            Console.CursorLeft = 32;
-            Console.Write("]"); //fin
-            Console.CursorLeft = 1; //Colocar el cursor al inicio
-            float onechunk = 30.0f / total;
-
-            //Rellenar la parte indicada
-            int position = 1;
-            for (int i = 0; i < onechunk * progreso; i++)
-            {
-                Console.BackgroundColor = ConsoleColor.Green;
-                Console.CursorLeft = position++;
-                Console.Write(" ");
-            }
-
-            //Pintar la otra parte
-            for (int i = position; i <= 31; i++)
-            {
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.CursorLeft = position++;
-                Console.Write(" ");
-            }
-
-            //Escribir el total al final
-            Console.CursorLeft = 35;
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.Write(progreso.ToString() + "% de " + total.ToString() + "    ");
-        }
+        }     
 
     }
 

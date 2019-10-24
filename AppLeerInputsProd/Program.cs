@@ -61,8 +61,7 @@ namespace AppLeerInputs
 
             Console.WriteLine("");
             Console.WriteLine("Termino de procesar archivos input geopagos");
-            loggerx.Info(idproceso + "|Termino de procesar archivos input geopagos");
-         
+            loggerx.Info(idproceso + "|Termino de procesar archivos input geopagos");         
 
         }
                

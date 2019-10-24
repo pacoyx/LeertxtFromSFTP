@@ -9,6 +9,7 @@ using AppLeerInputs.Models;
 using System.IO;
 using System.Configuration;
 using System.Threading;
+using NLog;
 
 namespace AppLeerInputs.Operaciones
 {
@@ -19,21 +20,38 @@ namespace AppLeerInputs.Operaciones
         string nombreBD = "";
         string usuarioSQL = "";
         string pwdSQL = "";
-        
-        public OperacionesTrans() {
-            LeerConfiguracion_Geo();
+
+
+        Logger loggerx = LogManager.GetCurrentClassLogger();
+
+
+        public OperacionesTrans(int idproceso) {
+            LeerConfiguracion_Geo(idproceso);
         }
         
-        private void LeerConfiguracion_Geo()
+        private void LeerConfiguracion_Geo(int idproceso)
         {
             this.carpetaLocal = ConfigurationManager.AppSettings["carpetaLocal_geo"].ToString();
             this.serverBD = ConfigurationManager.AppSettings["serverBD_xzedi"].ToString();
             this.nombreBD = ConfigurationManager.AppSettings["nombreBD_xzedi"].ToString();
             this.usuarioSQL = ConfigurationManager.AppSettings["usuarioSQL_xzedi"].ToString();
             this.pwdSQL = ConfigurationManager.AppSettings["pwdSQL_xzedi"].ToString();
+
+            loggerx.Info(idproceso+"|lectura de parameteos de conexion a BD completo");
+
+            if (this.carpetaLocal == string.Empty ||
+               this.serverBD == string.Empty ||
+               this.nombreBD == string.Empty ||
+               this.usuarioSQL == string.Empty ||
+               this.pwdSQL == string.Empty                
+               )
+            {
+                loggerx.Warn(idproceso + "|Carga de parametros para conexion a BD incompleto.");
+            }
+
         }
 
-        public void Grabar_InputGeoComercio(string nomArchivoTRX, string nomArchivoCOM,string carpeta)
+        public void Grabar_InputGeoComercio(int  idproceso,string nomArchivoTRX, string nomArchivoCOM,string carpeta)
         {
             string rutaArchivo = this.carpetaLocal + carpeta + @"\" + nomArchivoTRX + ".txt";
             int IdProceso = 100;
@@ -197,17 +215,18 @@ namespace AppLeerInputs.Operaciones
 
                 counterF++;               
             };
-            
+                       
+            loggerx.Info(idproceso+"|Generacion de lista de entidades de trx y comercios completo");
 
             //enviamos a grabar al aBD en sql server
-            SQL_InputGeoComercio(listaENT, listaComercios);
+            SQL_InputGeoComercio(idproceso, listaENT, listaComercios);
 
             Console.WriteLine("");
             Console.WriteLine("fecha/hora Termino SQL: {0}", DateTime.UtcNow);
         
         }
         
-        public void SQL_InputGeoComercio(List<In_gp_trx_txtBE> listaTrx, List<In_gp_comercios_txtBE> listaCom) {
+        public void SQL_InputGeoComercio(int idproceso,List<In_gp_trx_txtBE> listaTrx, List<In_gp_comercios_txtBE> listaCom) {
 
             //declaramos y abrimos la conexion la BDPROD
 
@@ -216,7 +235,7 @@ namespace AppLeerInputs.Operaciones
             cnxSQL.Open();
 
 
-            //configuramos el comando para ejecutar el SP de Comercios
+            //configuramos el comando para ejecutar el SP de Comercios ________________________________
             Console.WriteLine("comenzamos con los Comercio's");
 
             SqlCommand cmdSQL = new SqlCommand();
@@ -226,8 +245,9 @@ namespace AppLeerInputs.Operaciones
 
             var progress = new ProgressBar();
             int counter = 0;
-            foreach (var item in listaCom)
-              //  Parallel.ForEach(listaCom, (item) =>
+            try {
+                foreach (var item in listaCom)
+                //  Parallel.ForEach(listaCom, (item) =>
                 {
                     cmdSQL.Parameters.Clear();
                     cmdSQL.Parameters.AddWithValue("@pCodigopadre", item.Codigopadre);
@@ -291,11 +311,17 @@ namespace AppLeerInputs.Operaciones
                     progress.Report((double)counter / listaCom.Count);
                     //Thread.Sleep(20);
                 };
-
+            }
+            catch (Exception ex)
+            {
+                loggerx.Error(ex,idproceso+"|Ocurrio un error en el proceso de insertar datos de comercios en la BD");
+            }
             Console.WriteLine("");
             Console.WriteLine("comenzamos con las TRX's");
 
-            //configuramos el comando para ejecutar el SP de Trx
+            loggerx.Info(idproceso + "|insercion de comercios en BD completo");
+
+            //configuramos el comando para ejecutar el SP de Trx ____________________________________
 
             cmdSQL = new SqlCommand();
             cmdSQL.Connection = cnxSQL;
@@ -304,7 +330,9 @@ namespace AppLeerInputs.Operaciones
 
             //iteramos la lista Trx y ejecutamos cada fila
             counter = 0;
-            foreach (var item in listaTrx)
+            try
+            {
+                foreach (var item in listaTrx)
             //Parallel.ForEach(listaTrx, (item) =>
             {
                 cmdSQL.Parameters.Clear();
@@ -373,6 +401,12 @@ namespace AppLeerInputs.Operaciones
                 progress.Report((double)counter / listaTrx.Count);
                 //Thread.Sleep(20);
             };
+            }
+            catch (Exception ex)
+            {
+                loggerx.Error(ex, idproceso + "|Ocurrio un error en el proceso de insertar datos de trx's en la BD");
+            }
+            loggerx.Info(idproceso+"|insercion de transacciones en BD completo");
 
             Console.WriteLine("");
             progress = null;

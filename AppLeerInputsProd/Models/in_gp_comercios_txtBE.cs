@@ -62,6 +62,7 @@ namespace AppLeerInputs.Models
         public string Empresa { get; set; }
         public string Referido { get; set; }
         public int IdProceso { get; set; }
-       
+        public DateTime Fechacreacionreg { get; set; }
+
     }
 }

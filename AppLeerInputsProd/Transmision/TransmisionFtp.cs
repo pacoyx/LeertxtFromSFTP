@@ -21,19 +21,37 @@ namespace AppLeerInputs.Transmision
         string carpetaLocal = "";
         string carpetaRemota = "";
 
+        string host_pmc = "";
+        int puerto_pmc = 22;
+        string username_pmc = "";
+        string password_pmc = "";
+        string carpetaLocal_pmc = "";
+        string carpetaRemota_pmc = "";
+
+
+
         Logger loggerx = LogManager.GetCurrentClassLogger();
 
-        private void LeerConfiguracion_Geo(int idproceso)
+        private void LeerConfiguracion_Origen_Input(int idproceso)
         {
-
+            //geopagos
             this.host = ConfigurationManager.AppSettings["host_geo"].ToString();
             this.username = ConfigurationManager.AppSettings["username_geo"].ToString();
             this.puerto = int.Parse(ConfigurationManager.AppSettings["puerto_geo"]);
             this.password = ConfigurationManager.AppSettings["password_geo"].ToString();
             this.carpetaLocal = ConfigurationManager.AppSettings["carpetaLocal_geo"].ToString();
             this.carpetaRemota = ConfigurationManager.AppSettings["carpetaRemota_geo"].ToString();
+            loggerx.Info(idproceso + "|Carga de parametros para conexion a ftp geopagos completado.");
 
-            loggerx.Info(idproceso + "|Carga de parametros para conexion a ftp completado.");
+            //pmc
+            this.host_pmc = ConfigurationManager.AppSettings["host_pmc"].ToString();
+            this.username_pmc = ConfigurationManager.AppSettings["username_pmc"].ToString();
+            this.puerto_pmc = int.Parse(ConfigurationManager.AppSettings["puerto_pmc"]);
+            this.password_pmc = ConfigurationManager.AppSettings["password_pmc"].ToString();
+            this.carpetaLocal_pmc = ConfigurationManager.AppSettings["carpetaLocal_pmc"].ToString();
+            this.carpetaRemota_pmc = ConfigurationManager.AppSettings["carpetaRemota_pmc"].ToString();
+            loggerx.Info(idproceso + "|Carga de parametros para conexion a ftp pmc completado.");
+
 
             if (this.host == string.Empty ||
                 this.username == string.Empty ||
@@ -46,6 +64,22 @@ namespace AppLeerInputs.Transmision
                 loggerx.Warn(idproceso + "|Carga de parametros para conexion a ftp incompleto.");
             }
 
+
+            if (this.host_pmc == string.Empty ||
+               this.username_pmc == string.Empty ||
+               this.puerto_pmc.ToString() == string.Empty ||
+               this.password_pmc == string.Empty ||
+               this.carpetaLocal_pmc == string.Empty ||
+               this.carpetaRemota_pmc == string.Empty
+               )
+            {
+                loggerx.Warn(idproceso + "|Carga de parametros para conexion a ftp incompleto.");
+            }
+
+
+
+
+
         }
 
         public void Download_InputGeoPagos(int idproceso, string filtroComercio, string filtroTrx, string carpeta)
@@ -53,7 +87,7 @@ namespace AppLeerInputs.Transmision
             try
             {
 
-                this.LeerConfiguracion_Geo(idproceso);
+                this.LeerConfiguracion_Origen_Input(idproceso);
 
                 using (var sftp = new SftpClient(host, puerto, username, password))
                 {
@@ -69,7 +103,7 @@ namespace AppLeerInputs.Transmision
                     loggerx.Info(idproceso + "|Numero de archivos en memoria : " + files.Count<object>());
                     Console.WriteLine("Numero de archivos en memoria : {0}", files.Count<object>());
 
-                    Console.WriteLine("comenzando proceso...");
+                    Console.WriteLine("comenzando proceso de descarga...");
                     Console.WriteLine("fecha/hora inicio: {0}", DateTime.UtcNow);
 
                     Directory.CreateDirectory(carpetaLocal + carpeta);
@@ -123,7 +157,47 @@ namespace AppLeerInputs.Transmision
 
         }
 
+        public void Download_InputPMC(int idproceso, string carpeta)
+        {
+            try
+            {
+                this.LeerConfiguracion_Origen_Input(idproceso);
 
+                using (var sftp = new SftpClient(host, puerto, username, password))
+                {
+                    Console.WriteLine("conectando al sftp pmc....");
+
+                    sftp.Connect();
+
+                    loggerx.Info(idproceso + "|Conexion al sftp pmc correcto");
+                    Console.WriteLine("conexion establecida correctamente...");                    
+                    Console.WriteLine("comenzando proceso de descarga...");
+                    Console.WriteLine("fecha/hora inicio: {0}", DateTime.UtcNow);
+
+                    Directory.CreateDirectory(carpetaLocal_pmc + carpeta);
+                    loggerx.Info(idproceso + "|Creacion de carpeta con la fecha de proceso: " + carpeta + " correcto");
+                          
+                    using (var fileD = File.OpenWrite(carpetaLocal_pmc + carpeta + @"\mc_009018443.csv"))
+                    {
+                        sftp.DownloadFile(carpetaRemota_pmc, fileD);
+                    }
+                   
+                    sftp.Disconnect();
+                }
+            }
+            catch (Exception ex)
+            {
+                loggerx.Error(ex, idproceso + "|Ocurrio un error en la descarga de archivos de geopagos del sftp");
+            }
+
+            loggerx.Info(idproceso + "|Termino proceso de descarga de archivos del ftp de geopagos");
+            Console.WriteLine("fecha/hora termino: {0}", DateTime.UtcNow);
+            Console.WriteLine("termino proceso...");
+            Console.WriteLine("desconectado...");
+
+        }
+
+        public void Download_Input_NBO(int idproceso, string carpeta) { }
     }
 
 }

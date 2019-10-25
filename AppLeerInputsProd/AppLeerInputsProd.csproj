@@ -69,6 +69,7 @@
   <ItemGroup>
     <Compile Include="Models\in_gp_comercios_txtBE.cs" />
     <Compile Include="Models\in_gp_trx_txtBE.cs" />
+    <Compile Include="Models\In_pmcBE.cs" />
     <Compile Include="Operaciones\OperacionesTrans.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgressBar.cs" />

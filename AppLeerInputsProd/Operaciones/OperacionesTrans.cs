@@ -16,6 +16,7 @@ namespace AppLeerInputs.Operaciones
     public class OperacionesTrans
     {
         string carpetaLocal = "";
+        string carpetaLocal_PMC = "";
         string serverBD = "";
         string nombreBD = "";
         string usuarioSQL = "";
@@ -32,12 +33,14 @@ namespace AppLeerInputs.Operaciones
         private void LeerConfiguracion_Geo(int idproceso)
         {
             this.carpetaLocal = ConfigurationManager.AppSettings["carpetaLocal_geo"].ToString();
+            this.carpetaLocal_PMC = ConfigurationManager.AppSettings["carpetaLocal_pmc"].ToString();
+
             this.serverBD = ConfigurationManager.AppSettings["serverBD_xzedi"].ToString();
             this.nombreBD = ConfigurationManager.AppSettings["nombreBD_xzedi"].ToString();
             this.usuarioSQL = ConfigurationManager.AppSettings["usuarioSQL_xzedi"].ToString();
             this.pwdSQL = ConfigurationManager.AppSettings["pwdSQL_xzedi"].ToString();
-
-            loggerx.Info(idproceso+"|lectura de parameteos de conexion a BD completo");
+                        
+            loggerx.Info(idproceso+"|Lectura de parameteos de conexion a BD completo");
 
             if (this.carpetaLocal == string.Empty ||
                this.serverBD == string.Empty ||
@@ -51,10 +54,71 @@ namespace AppLeerInputs.Operaciones
 
         }
 
+        public void Grabar_Input_NBO(int idproceso, string carpeta)
+        {
+
+        }
+
+        public void Grabar_InputPMC(int idproceso, string carpeta)
+        {
+            string rutaArchivo = this.carpetaLocal_PMC + carpeta  + @"\mc_009018443.csv";
+            string line;
+            List<In_pmcBE> listaENT = new List<In_pmcBE>();
+
+            int cont = 0;
+            StreamReader file = new StreamReader(rutaArchivo);
+            while ((line = file.ReadLine()) != null)
+            {
+                if (cont > 0)
+                {
+                    var fila = line.Split(';');
+                    In_pmcBE ent = new In_pmcBE()
+                    {
+                        Idproceso = idproceso,
+                        Codigo = fila[0],
+                        Producto = fila[1],
+                        Tipo_Mov = fila[2],
+                        Fecha_Proceso = fila[3],
+                        Fecha_Lote = fila[4],
+                        Lote_Manual = fila[5],
+                        Lote_Pos = fila[6],
+                        Terminal = fila[7],
+                        Voucher = fila[8],
+                        Autorizacion = fila[9],
+                        Cuotas = fila[10],
+                        Tarjeta = fila[11],
+                        Origen = fila[12],
+                        Transaccion = fila[13],
+                        Fecha_Consumo = fila[14],
+                        Importe = double.Parse(fila[15]),
+                        Status = fila[16],
+                        Comision = double.Parse(fila[17]),
+                        Comision_Afecta = double.Parse(fila[18]),
+                        IGV = double.Parse(fila[19]),
+                        Neto_Parcial = double.Parse(fila[20]),
+                        Neto_Total = double.Parse(fila[21]),
+                        Fecha_Abono = fila[22],
+                        Fecha_Abono_8Dig = fila[23],
+                        Observaciones = fila[24],
+                        ExtraComision = double.Parse(fila[25]),
+                        Comis_Standar = double.Parse(fila[26]),
+                        Comis = double.Parse(fila[27]),
+                        Nro_ID = fila[28],
+                        Tpo_Comprob = fila[29],
+                        Nro_Comprob = fila[30]
+                    };
+                    listaENT.Add(ent);
+                }
+                cont++;
+            }
+
+            SQL_Input_PMC(idproceso, listaENT);
+        }
+
         public void Grabar_InputGeoComercio(int  idproceso,string nomArchivoTRX, string nomArchivoCOM,string carpeta)
         {
             string rutaArchivo = this.carpetaLocal + carpeta + @"\" + nomArchivoTRX + ".txt";
-            int IdProceso = 100;
+            
             string line;
             List<In_gp_trx_txtBE> listaENT = new List<In_gp_trx_txtBE>();
             List<In_gp_comercios_txtBE> listaComercios = new List<In_gp_comercios_txtBE>();
@@ -68,7 +132,7 @@ namespace AppLeerInputs.Operaciones
                 var fila = line.Split('\t');
                 In_gp_trx_txtBE ent = new In_gp_trx_txtBE()
                 {
-                    IdProceso = IdProceso,
+                    IdProceso = idproceso,
                     TipodeTransaccion = fila[0],
                     FechaTransaccion = fila[1],
                     CodigoMCC = fila[2],
@@ -125,12 +189,11 @@ namespace AppLeerInputs.Operaciones
                     Estadomonitoreo = fila[53],
                     CodigoRecargasServicios = fila[54],
                     CodigoMC = fila[55],
-                    Fuente = fila[56],
+                    Fuente = fila[56]                    
                 };
                 listaENT.Add(ent);
             };
-
-
+            
 
             //leemos el archivo txt de comercios(2xmin) GeoPagos
             string[] files = Directory.GetFiles(this.carpetaLocal + carpeta);
@@ -138,17 +201,28 @@ namespace AppLeerInputs.Operaciones
             int counterF = 0;
          
             foreach (var item in files)
-            {
-
+            {                           
                 if (!item.Contains(nomArchivoTRX))
                 {
+                    //comercios_20191016_230805.txt
+                    string fechacadena = item.ToString().Substring(item.Length - 19, 15);
+
+                    string yy = fechacadena.Substring(0, 4);
+                    string MM = fechacadena.Substring(4, 2);
+                    string dd = fechacadena.Substring(6, 2);
+                    string hh = fechacadena.Substring(9, 2);
+                    string mi = fechacadena.Substring(11, 2);
+                    string ss = fechacadena.Substring(13, 2);
+
+                    DateTime fechaCreacionReg = new DateTime(int.Parse(yy), int.Parse(MM), int.Parse(dd), int.Parse(hh), int.Parse(mi), int.Parse(ss));
+                                                 
                     StreamReader fileC = new StreamReader(item);
                     while ((line = fileC.ReadLine()) != null)
                     {
                         var fila = line.Split('\t');
                         In_gp_comercios_txtBE comerENT = new In_gp_comercios_txtBE() {
 
-                            IdProceso = IdProceso,
+                            IdProceso = idproceso,
                             Codigopadre = fila[0],
                             Estado = fila[1],
                             Ruccomerciopatrocinado = fila[2],
@@ -204,8 +278,8 @@ namespace AppLeerInputs.Operaciones
                             Fechaderechazo = "",
                             Empresa = "",
                             Referido = "",
+                            Fechacreacionreg = fechaCreacionReg,
                         };
-
 
                         listaComercios.Add(comerENT);
                         counter++;
@@ -218,14 +292,81 @@ namespace AppLeerInputs.Operaciones
                        
             loggerx.Info(idproceso+"|Generacion de lista de entidades de trx y comercios completo");
 
-            //enviamos a grabar al aBD en sql server
+            //enviamos a grabar al aBD en sql server ____________________________________________________________________________
             SQL_InputGeoComercio(idproceso, listaENT, listaComercios);
 
             Console.WriteLine("");
             Console.WriteLine("fecha/hora Termino SQL: {0}", DateTime.UtcNow);
         
         }
-        
+
+        public void SQL_Input_PMC(int idproceso, List<In_pmcBE> listapmc)
+        {
+            string cadenaCNX = "server=" + serverBD + ";initial catalog=" + nombreBD + ";uid=" + usuarioSQL + ";pwd=" + pwdSQL;
+            SqlConnection cnxSQL = new SqlConnection(cadenaCNX);
+            cnxSQL.Open();
+
+            SqlCommand cmdSQL = new SqlCommand();
+            cmdSQL.Connection = cnxSQL;
+            cmdSQL.CommandType = CommandType.StoredProcedure;
+            cmdSQL.CommandText = "sp_i_in_pmc";
+
+            var progress = new ProgressBar();
+            int counter = 0;
+            try
+            {
+                foreach (var item in listapmc)                
+                {
+                    cmdSQL.Parameters.Clear();
+                    cmdSQL.Parameters.AddWithValue("@pCodigo", item.Codigo);
+                    cmdSQL.Parameters.AddWithValue("@pProducto", item.Producto);
+                    cmdSQL.Parameters.AddWithValue("@pTipo_Mov", item.Tipo_Mov);
+                    cmdSQL.Parameters.AddWithValue("@pFecha_Proceso", item.Fecha_Proceso);
+                    cmdSQL.Parameters.AddWithValue("@pFecha_Lote", item.Fecha_Lote);
+                    cmdSQL.Parameters.AddWithValue("@pLote_Manual", item.Lote_Manual);
+                    cmdSQL.Parameters.AddWithValue("@pLote_Pos", item.Lote_Pos);
+                    cmdSQL.Parameters.AddWithValue("@pTerminal", item.Terminal);
+                    cmdSQL.Parameters.AddWithValue("@pVoucher", item.Voucher);
+                    cmdSQL.Parameters.AddWithValue("@pAutorizacion", item.Autorizacion);
+                    cmdSQL.Parameters.AddWithValue("@pCuotas", item.Cuotas);
+                    cmdSQL.Parameters.AddWithValue("@pTarjeta", item.Tarjeta);
+                    cmdSQL.Parameters.AddWithValue("@pOrigen", item.Origen);
+                    cmdSQL.Parameters.AddWithValue("@pTransaccion", item.Transaccion);
+                    cmdSQL.Parameters.AddWithValue("@pFecha_Consumo", item.Fecha_Consumo);
+                    cmdSQL.Parameters.AddWithValue("@pImporte", item.Importe);
+                    cmdSQL.Parameters.AddWithValue("@pStatus", item.Status);
+                    cmdSQL.Parameters.AddWithValue("@pComision", item.Comision);
+                    cmdSQL.Parameters.AddWithValue("@pComision_Afecta", item.Comision_Afecta);
+                    cmdSQL.Parameters.AddWithValue("@pIGV", item.IGV);
+                    cmdSQL.Parameters.AddWithValue("@pNeto_Parcial", item.Neto_Parcial);
+                    cmdSQL.Parameters.AddWithValue("@pNeto_Total", item.Neto_Total);
+                    cmdSQL.Parameters.AddWithValue("@pFecha_Abono", item.Fecha_Abono);
+                    cmdSQL.Parameters.AddWithValue("@pFecha_Abono_8Dig", item.Fecha_Abono_8Dig);
+                    cmdSQL.Parameters.AddWithValue("@pObservaciones", item.Observaciones);
+                    cmdSQL.Parameters.AddWithValue("@pExtraComision", item.ExtraComision);
+                    cmdSQL.Parameters.AddWithValue("@pComis_Standar", item.Comis_Standar);
+                    cmdSQL.Parameters.AddWithValue("@pComis", item.Comis);
+                    cmdSQL.Parameters.AddWithValue("@pNro_ID", item.Nro_ID);
+                    cmdSQL.Parameters.AddWithValue("@pTpo_Comprob", item.Tpo_Comprob);
+                    cmdSQL.Parameters.AddWithValue("@pNro_Comprob", item.Nro_Comprob);
+                    cmdSQL.Parameters.AddWithValue("@pIdproceso", item.Idproceso);
+
+                    cmdSQL.ExecuteNonQuery();
+
+                    counter++;
+                    progress.Report((double)counter / listapmc.Count);
+                    //Thread.Sleep(20);
+                };
+            }
+            catch (Exception ex)
+            {
+                loggerx.Error(ex, idproceso + "|Ocurrio un error en el proceso de insertar datos de PMC en la BD");
+            }
+            Console.WriteLine("");            
+            loggerx.Info(idproceso + "|insercion de registros PMC en BD completo");
+
+        }
+
         public void SQL_InputGeoComercio(int idproceso,List<In_gp_trx_txtBE> listaTrx, List<In_gp_comercios_txtBE> listaCom) {
 
             //declaramos y abrimos la conexion la BDPROD
@@ -304,6 +445,7 @@ namespace AppLeerInputs.Operaciones
                     cmdSQL.Parameters.AddWithValue("@pEmpresa", item.Empresa);
                     cmdSQL.Parameters.AddWithValue("@pReferido", item.Referido);
                     cmdSQL.Parameters.AddWithValue("@pIdProceso", item.IdProceso);
+                    cmdSQL.Parameters.AddWithValue("@pfechacreacionreg", item.Fechacreacionreg);
 
                     cmdSQL.ExecuteNonQuery();
 
@@ -407,6 +549,22 @@ namespace AppLeerInputs.Operaciones
                 loggerx.Error(ex, idproceso + "|Ocurrio un error en el proceso de insertar datos de trx's en la BD");
             }
             loggerx.Info(idproceso+"|insercion de transacciones en BD completo");
+
+            try { 
+            cmdSQL = new SqlCommand();
+            cmdSQL.Connection = cnxSQL;
+            cmdSQL.CommandType = CommandType.StoredProcedure;
+            cmdSQL.CommandText = "sp_d_eliminar_duplicado_txtgeo";
+            cmdSQL.Parameters.Clear();
+            cmdSQL.Parameters.AddWithValue("@vidproceso", idproceso);
+            cmdSQL.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                loggerx.Error(ex, idproceso + "|Ocurrio al intentar eliminar duplicados en BD comercios");
+            }
+            loggerx.Info(idproceso + "|Eliminando duplicados en comercios BD");
+
 
             Console.WriteLine("");
             progress = null;
